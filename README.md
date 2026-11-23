@@ -160,7 +160,7 @@ The self-hosted runner must be online, and the Kind cluster must be running, for
 ### Re-running the deployment
 
 1. Create the cluster: `kind create cluster --name devops-lab`
-2. Register a self-hosted runner for this repository (**Settings > Actions > Runners > New self-hosted runner**, Windows) and start it with `.\run.cmd`
+2. Register a self-hosted runner for this repository (**Settings > Actions > Runners > New self-hosted runner**, Windows) and start it with `.\run.cmd` (Linux/macOS runner: `./run.sh`)
 3. Run the workflow: **Actions > Kubernetes Demo CI/CD > Run workflow** on `main`
 4. Verify with `kubectl get pods -n devops-demo` and `helm history devops-demo -n devops-demo`
 
@@ -183,6 +183,8 @@ The self-hosted runner must be online, and the Kind cluster must be running, for
 ## 8. Local Setup
 
 ### Prerequisites
+
+> Commands are written for **Windows PowerShell**. Where Linux or macOS needs different syntax, a **Linux/macOS (Bash)** version follows directly below. All other commands work the same on every platform.
 
 Git, Docker Desktop, kubectl, Kind, Helm, Python, a Docker Hub account, and (for the pipeline's deploy job) a self-hosted GitHub Actions runner on the machine running Kind.
 
@@ -214,6 +216,18 @@ helm upgrade --install devops-demo ./helm/devops-demo `
   --set image.repository=nikhilpreetham/devops-demo `
   --set image.tag=<IMAGE_TAG> `
   --wait `
+  --timeout 5m
+```
+
+**Linux/macOS (Bash):**
+
+```bash
+helm upgrade --install devops-demo ./helm/devops-demo \
+  --namespace devops-demo \
+  --create-namespace \
+  --set image.repository=nikhilpreetham/devops-demo \
+  --set image.tag=<IMAGE_TAG> \
+  --wait \
   --timeout 5m
 ```
 
@@ -293,7 +307,7 @@ These exercises were performed on the local cluster. Full details are in [docs/t
 - **Deployment depends on one machine.** Deploy needs the local PC, the runner and the Kind cluster to be running, so it is a manual step. The cluster and runner were deleted after the project.
 - **No external access.** The Service is `ClusterIP`; the application is reached with `kubectl port-forward`.
 - **No monitoring or alerting** beyond Kubernetes probes and `kubectl` commands.
-- **Windows-specific deploy step.** The Helm command uses PowerShell line continuations.
+- **Windows-specific deploy step.** The Helm command in the workflow uses `shell: powershell` and backtick line continuations. To use a Linux self-hosted runner, change that step to `shell: bash` and replace each trailing backtick with a backslash (`\`), as in the Bash example in [Deploy with Helm](#deploy-with-helm).
 - **No pod security context** in the Helm chart; non-root execution comes from the Dockerfile.
 
 ## 14. Future Improvements
