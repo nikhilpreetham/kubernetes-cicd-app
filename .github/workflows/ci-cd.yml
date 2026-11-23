@@ -8,6 +8,8 @@ on:
   pull_request:
     branches:
       - main
+  # Manual run: also deploys to the local Kind cluster (needs the self-hosted runner online)
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -51,7 +53,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Docker Hub
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -62,17 +64,17 @@ jobs:
         with:
           context: ./app
           file: ./app/Dockerfile
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
           tags: |
             nikhilpreetham/devops-demo:latest
             nikhilpreetham/devops-demo:${{ github.sha }}
 
-  # Stage 3: Kubernetes deployment
+  # Stage 3: Kubernetes deployment (manual runs only, so pushes do not wait for an offline runner)
   deploy:
     name: Deploy to Local Kubernetes
     runs-on: self-hosted
     needs: docker
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
 
     steps:
       - name: Checkout source code

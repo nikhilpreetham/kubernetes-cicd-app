@@ -1,6 +1,8 @@
 # Kubernetes CI/CD Application Deployment
 
-A self-directed DevOps project that tests, containerizes and deploys a Python Flask application to a local Kubernetes cluster. GitHub Actions runs the tests, builds and pushes a Docker image to Docker Hub, and then deploys it with Helm to a Kind cluster through a self-hosted Windows runner.
+A self-directed DevOps project that tests, containerizes and deploys a Python Flask application to a local Kubernetes cluster. GitHub Actions runs the tests, builds and pushes a Docker image to Docker Hub, and deploys it with Helm to a Kind cluster through a self-hosted Windows runner.
+
+> **Current status:** the project was completed and verified on a local Kind cluster, which was then deleted along with the self-hosted runner. Test and build still run on every push and pull request. The deploy job runs only when started manually, after the cluster and runner are recreated (see [Re-running the deployment](#re-running-the-deployment)).
 
 ![Python](https://img.shields.io/badge/Python-Flask-3776AB?logo=python&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-Hub-2496ED?logo=docker&logoColor=white)
@@ -73,7 +75,7 @@ flowchart LR
     SVC --> PODS
 ```
 
-The test and build jobs run on GitHub-hosted Ubuntu runners. Only the deploy job runs on the self-hosted Windows runner, because that machine has access to the local Kind cluster.
+The test and build jobs run on GitHub-hosted Ubuntu runners. Only the deploy job runs on the self-hosted Windows runner, because that machine has access to the local Kind cluster. Deploy runs only when the workflow is started manually.
 
 ## 3. Technology Stack
 
@@ -139,19 +141,28 @@ The container runs Gunicorn with 2 workers on port `8080`, as a non-root user (`
 
 ## 6. CI/CD Pipeline
 
-Workflow: [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml). It runs on pushes and pull requests to `main`.
+Workflow: [`.github/workflows/ci-cd.yml`](.github/workflows/ci-cd.yml). It runs on pushes and pull requests to `main`, and can be started manually (`workflow_dispatch`).
 
 | Job | Runs on | When | What it does |
 |---|---|---|---|
 | `test` | `ubuntu-latest` | Every push and PR | Installs dependencies and runs `pytest` |
-| `docker` | `ubuntu-latest` | After `test` passes | Builds the image; on pushes to `main` only, logs in to Docker Hub and pushes `:latest` and `:<commit-sha>` |
-| `deploy` | `self-hosted` (Windows) | After `docker`, pushes to `main` only | `kubectl cluster-info`, `helm upgrade --install` with `image.tag=<commit-sha>`, then `kubectl rollout status` |
+| `docker` | `ubuntu-latest` | After `test` passes | Builds the image; on `main` (push or manual run), logs in to Docker Hub and pushes `:latest` and `:<commit-sha>`. Pull requests only build |
+| `deploy` | `self-hosted` (Windows) | After `docker`, manual runs on `main` only | `kubectl cluster-info`, `helm upgrade --install` with `image.tag=<commit-sha>`, then `kubectl rollout status` |
+
+**Why deploy is manual:** the deploy target is a Kind cluster on a personal PC that is not always running. If deploy ran on every push, each push would leave a job waiting for an offline runner. During the project, deploy ran automatically on pushes to `main`; it was switched to manual after the cluster was removed.
 
 **Why the commit SHA tag:** every deployment points to the exact image built from that commit, so a rollout or rollback always runs a known version. `latest` is pushed for convenience but is not used for deployment.
 
 **Required repository secrets:** `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN` (a Docker Hub access token, not the account password).
 
 The self-hosted runner must be online, and the Kind cluster must be running, for the deploy job to succeed.
+
+### Re-running the deployment
+
+1. Create the cluster: `kind create cluster --name devops-lab`
+2. Register a self-hosted runner for this repository (**Settings > Actions > Runners > New self-hosted runner**, Windows) and start it with `.\run.cmd`
+3. Run the workflow: **Actions > Kubernetes Demo CI/CD > Run workflow** on `main`
+4. Verify with `kubectl get pods -n devops-demo` and `helm history devops-demo -n devops-demo`
 
 ## 7. Kubernetes and Helm Configuration
 
@@ -264,7 +275,7 @@ These exercises were performed on the local cluster. Full details are in [docs/t
 - The container runs as a non-root user.
 - The workflow token is limited to `contents: read`.
 - The self-hosted runner's installation folder and credentials are excluded from Git.
-- **Self-hosted runner on a public repository:** GitHub advises against using self-hosted runners with public repositories, because a workflow change in a fork pull request could run code on the runner machine. This repository requires maintainer approval before workflows from outside contributors run (**Settings > Actions > General > Approval for running fork pull request workflows > Require approval for all external contributors**). A safer long-term option is listed in [Future Improvements](#14-future-improvements).
+- **Self-hosted runner on a public repository:** GitHub advises against using self-hosted runners with public repositories, because a workflow change in a fork pull request could run code on the runner machine. The runner was removed after the project. If it is registered again, workflows from outside contributors require maintainer approval (**Settings > Actions > General > Approval for running fork pull request workflows > Require approval for all external contributors**), and the runner should be removed again after use. A safer long-term option is listed in [Future Improvements](#14-future-improvements).
 
 ## 12. Learning Outcomes
 
@@ -279,7 +290,7 @@ These exercises were performed on the local cluster. Full details are in [docs/t
 ## 13. Scope and Limitations
 
 - **Local learning environment.** The cluster is a single-node Kind cluster on a Windows PC, not a production or managed Kubernetes service.
-- **Deployment depends on one machine.** If the PC, the runner or the cluster is off, the deploy job waits for a runner and the pipeline does not complete.
+- **Deployment depends on one machine.** Deploy needs the local PC, the runner and the Kind cluster to be running, so it is a manual step. The cluster and runner were deleted after the project.
 - **No external access.** The Service is `ClusterIP`; the application is reached with `kubectl port-forward`.
 - **No monitoring or alerting** beyond Kubernetes probes and `kubectl` commands.
 - **Windows-specific deploy step.** The Helm command uses PowerShell line continuations.
