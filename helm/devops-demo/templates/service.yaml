@@ -1,20 +1,19 @@
-# Python
-__pycache__/
-*.py[cod]
-*.log
-.env
-.venv/
-venv/
 
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-!example.tfvars
-crash.log
-
-# Kubernetes / local files
-*.swp
-.DS_Store
-Thumbs.db
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app.kubernetes.io/name: {{ .Chart.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
