@@ -29,3 +29,6 @@ htmlcov/
 # Python cache
 __pycache__/
 *.py[cod]
+
+# GitHub Actions self-hosted runner
+actions-runner/
