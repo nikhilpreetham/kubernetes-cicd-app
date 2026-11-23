@@ -20,3 +20,12 @@ crash.log
 .DS_Store
 Thumbs.db
 '@ | Set-Content .gitignore
+
+# Python testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Python cache
+__pycache__/
+*.py[cod]
