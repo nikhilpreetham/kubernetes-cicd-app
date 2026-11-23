@@ -48,6 +48,18 @@ helm upgrade --install devops-demo ./helm/devops-demo `
   --timeout 5m
 ```
 
+**Linux/macOS (Bash):**
+
+```bash
+helm upgrade --install devops-demo ./helm/devops-demo \
+  --namespace devops-demo \
+  --set image.repository=nikhilpreetham/devops-demo \
+  --set image.tag=<IMAGE_TAG> \
+  --force-conflicts \
+  --wait \
+  --timeout 5m
+```
+
 **Lesson:** when Helm manages a resource, change it through the chart and `helm upgrade`, not with `kubectl patch` or `kubectl edit`.
 
 **Verified after recovery:** 3/3 replicas available, 3 Pods running, 0 restarts, both probes on `/health`, Helm release revision 8, status `deployed`.
