@@ -11,6 +11,8 @@ How the files in this repository connect, and what each pipeline step does.
 | `c91a2d0` | Docker build and Docker Hub publishing job |
 | `65dd64a` | Deploy job on the self-hosted Windows runner (this run failed at the Helm step) |
 | `0e0932f` | Fixed the Helm Service template; the full pipeline passed |
+| PR #1 | Repository cleanup, README, docs, workflow permissions, MIT license |
+| This change | Deploy job switched to manual runs (`workflow_dispatch`) after the Kind cluster and runner were removed |
 
 ## How the pieces connect
 
@@ -45,14 +47,14 @@ If tests fail, the `docker` and `deploy` jobs do not run (`needs:`).
 ### `docker` (ubuntu-latest)
 
 1. `docker/setup-buildx-action@v3`
-2. `docker/login-action@v3` with `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`, only on a push to `main`
-3. `docker/build-push-action@v6`: builds `./app`; pushes `:latest` and `:<commit-sha>` only on a push to `main`
+2. `docker/login-action@v3` with `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN`, only on `main` (push or manual run)
+3. `docker/build-push-action@v6`: builds `./app`; pushes `:latest` and `:<commit-sha>` on `main` (push or manual run)
 
 On pull requests the image is built but not pushed, which checks that the Dockerfile still builds without publishing anything.
 
 ### `deploy` (self-hosted Windows runner)
 
-Runs only on a push to `main`, after `docker` succeeds.
+Runs only on a manual run (`workflow_dispatch`) on `main`, after `docker` succeeds. Manual runs rebuild and push the image for the current commit first, so the tag the deploy uses always exists.
 
 1. `kubectl cluster-info`: confirms the runner can reach the Kind cluster
 2. `helm version`

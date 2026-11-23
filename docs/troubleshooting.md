@@ -66,7 +66,7 @@ A rollback creates a new Helm revision with the old configuration; it does not d
 
 | Symptom | Likely cause | Check |
 |---|---|---|
-| Deploy job stays queued | Self-hosted runner offline | `Settings > Actions > Runners`; start the runner (`run.cmd` or its service) |
+| Deploy job stays queued | Self-hosted runner offline (this happened after the cluster and runner were removed, and led to making deploy manual-only) | `Settings > Actions > Runners`; start the runner (`run.cmd` or its service), or cancel the run |
 | `kubectl cluster-info` fails in the deploy job | Kind cluster stopped, or the runner's kubeconfig points to another context | `kind get clusters`; `kubectl config current-context` should be `kind-devops-lab` |
 | Pods in `ImagePullBackOff` | Tag not in Docker Hub, or wrong repository | `kubectl describe pod`; check the tag exists at `hub.docker.com/r/nikhilpreetham/devops-demo/tags` |
 | Pods in `CrashLoopBackOff` | Application error or failing liveness probe | `kubectl logs <POD_NAME> -n devops-demo --previous` |
