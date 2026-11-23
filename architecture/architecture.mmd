@@ -1,0 +1,21 @@
+flowchart LR
+    DEV(["Developer"]) -->|git push| GH["GitHub repository"]
+
+    subgraph GHA["GitHub Actions"]
+        TEST["1. Test<br/>ubuntu-latest<br/>pytest"]
+        BUILD["2. Build and push<br/>ubuntu-latest<br/>Docker Buildx"]
+        DEPLOY["3. Deploy<br/>self-hosted Windows runner<br/>Helm"]
+    end
+
+    HUB[("Docker Hub<br/>nikhilpreetham/devops-demo<br/>:latest and :commit-sha")]
+
+    subgraph KIND["Local Kind cluster: devops-lab"]
+        SVC["Service devops-demo<br/>ClusterIP :80"]
+        PODS["Deployment devops-demo<br/>3 Pods, Gunicorn :8080<br/>probes on /health"]
+    end
+
+    GH --> TEST --> BUILD --> DEPLOY
+    BUILD -->|push image| HUB
+    DEPLOY -->|helm upgrade --install<br/>image.tag = commit SHA| PODS
+    HUB -->|image pull| PODS
+    SVC --> PODS

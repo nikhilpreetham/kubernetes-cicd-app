@@ -1,4 +1,3 @@
-@'
 # Python
 __pycache__/
 *.py[cod]
@@ -7,28 +6,23 @@ __pycache__/
 .venv/
 venv/
 
-# Terraform
-.terraform/
-*.tfstate
-*.tfstate.*
-*.tfvars
-!example.tfvars
-crash.log
-
-# Kubernetes / local files
-*.swp
-.DS_Store
-Thumbs.db
-'@ | Set-Content .gitignore
-
 # Python testing
 .pytest_cache/
 .coverage
 htmlcov/
 
-# Python cache
-__pycache__/
-*.py[cod]
-
-# GitHub Actions self-hosted runner
+# GitHub Actions self-hosted runner (local installation and credentials)
 actions-runner/
+
+# Credentials and keys
+*.pem
+*.key
+.kube/
+kubeconfig*
+
+# Editor and OS files
+*.swp
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
